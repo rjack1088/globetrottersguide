@@ -105,7 +105,7 @@ def compare_flights(flights):
 def main():
     st.set_page_config(page_title="Points vs Cash Flight Tool", page_icon="✈️")
     st.markdown("# ✈️ Points vs Cash Flight Tool")
-    st.write("Determine if using points or cash for flights is a better deal.")
+    st.write("Use this tool to compare whether a flight is a better deal when booked with cash or points. Simply enter your flight details and get a quick analysis.")
 
     mode = st.radio(
         "Choose mode:",
