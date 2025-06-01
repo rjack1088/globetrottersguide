@@ -29,15 +29,15 @@ POINT_VALUATIONS = {
     "Virgin Atlantic Flying Club": 1.33
 }
 
+
 def evaluate_redemption(cash_price, points_used, taxes_fees, bag_fees, program):
     cash_required_with_bags = taxes_fees + bag_fees
     val_with_bag = round((cash_price - cash_required_with_bags) / points_used * 100, 2)
     val_wo_bag = round((cash_price - taxes_fees) / points_used * 100, 2)
 
     benchmark = POINT_VALUATIONS.get(program, 1.0)
-    pt_cash_value = round(points_used * (benchmark / 100), 2)
-    total_effective_cost = round(cash_required_with_bags + pt_cash_value, 2)
-    savings = round(cash_price - total_effective_cost, 2)
+    total_effective_cost = cash_required_with_bags + (points_used * (benchmark / 100))
+    savings = cash_price - total_effective_cost
 
     if savings < 0 or val_wo_bag < benchmark:
         assessment = "Poor redemption"
@@ -46,44 +46,38 @@ def evaluate_redemption(cash_price, points_used, taxes_fees, bag_fees, program):
     else:
         assessment = "Great redemption!"
 
-    return {
-        "val_with_bag": val_with_bag,
-        "val_wo_bag": val_wo_bag,
-        "benchmark": benchmark,
-        "savings": savings,
-        "total_effective_cost": total_effective_cost,
-        "pt_cash_value": pt_cash_value,
-        "assessment": assessment
-    }
+    return val_with_bag, val_wo_bag, assessment, benchmark, savings
 
-# ---- Streamlit UI ----
 
-st.set_page_config(page_title="Points vs Cash Flight Tool", layout="centered")
+st.set_page_config(page_title="Points vs. Cash Flight Tool")
 
-st.title("✈️ Points vs Cash Flight Redemption Tool")
-st.write("Find out whether it's a good deal to use your miles or pay cash for your next flight.")
+st.title("✈️ Points vs. Cash Flight Comparison Tool")
+st.write(
+    "Use this tool to help you decide whether to book a flight with points/miles or cash, "
+    "based on airline-specific redemption benchmarks."
+)
 
 with st.form("flight_form"):
-    flight_name = st.text_input("Flight Name or Route", "Example: JFK to LAX")
-    cash_price = st.number_input("Cash Price of Ticket (exclude bag fees)", min_value=0.0, step=10.0)
-    taxes_fees = st.number_input("Taxes & Fees on Award Ticket", min_value=0.0, step=1.0)
-    bag_fees = st.number_input("Bag Fees (if applicable)", min_value=0.0, step=1.0)
-    points_used = st.number_input("Points Required for Award Ticket", min_value=1, step=100)
+    flight_name = st.text_input("Flight Name or Route", placeholder="Example: JFK to LHR")
+    cash_price = st.number_input("Cash Price (USD, excluding bag fees)", min_value=0.0, placeholder="e.g. 425.00")
+    taxes_fees = st.number_input("Taxes & Fees on Award Ticket (USD)", min_value=0.0, placeholder="e.g. 57.60")
+    bag_fees = st.number_input("Bag Fees (USD, if applicable)", min_value=0.0, placeholder="e.g. 70.00")
+    points_used = st.number_input("Points or Miles Required", min_value=0, placeholder="e.g. 32000")
+
     program = st.selectbox("Select Airline Loyalty Program", list(POINT_VALUATIONS.keys()))
 
-    submitted = st.form_submit_button("Evaluate Redemption")
+    submitted = st.form_submit_button("Compare")
 
 if submitted:
-    results = evaluate_redemption(cash_price, points_used, taxes_fees, bag_fees, program)
+    val_with_bag, val_wo_bag, assessment, benchmark, savings = evaluate_redemption(
+        cash_price, points_used, taxes_fees, bag_fees, program
+    )
 
-    st.subheader(f"Results for {flight_name}")
-    st.write(f"**Cash Price:** ${cash_price:.2f}")
-    st.write(f"**Points Required:** {points_used:,}")
-    st.write(f"**Value Per Point (with bag fees):** {results['val_with_bag']}¢")
-    st.write(f"**Value Per Point (excluding bag fees):** {results['val_wo_bag']}¢")
-    st.write(f"**Benchmark for {program}:** {results['benchmark']}¢")
-    st.write(f"**Cash Value of Points Used:** ${results['pt_cash_value']:.2f}")
-    st.write(f"**Total Effective Cost (points + cash):** ${results['total_effective_cost']:.2f}")
-    st.write(f"**Savings Compared to Cash Price:** ${results['savings']:.2f}")
-
-    st.success(f"**Assessment:** {results['assessment']}")
+    st.markdown("### 🧾 Results")
+    st.write(f"**Flight:** {flight_name}")
+    st.write(f"**Program:** {program}")
+    st.write(f"**Benchmark Redemption Value:** {benchmark:.2f}¢/point")
+    st.write(f"**Redemption Value w/o Bag Fees:** {val_wo_bag:.2f}¢/point")
+    st.write(f"**Redemption Value w/ Bag Fees:** {val_with_bag:.2f}¢/point")
+    st.write(f"**Estimated Savings vs. Paying Cash:** ${savings:.2f}")
+    st.write(f"**Assessment:** {assessment}")
