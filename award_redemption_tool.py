@@ -31,49 +31,22 @@ POINT_VALUATIONS = {
 
 AIRLINE_CHOICES = list(POINT_VALUATIONS.keys())
 
-st.set_page_config(page_title="Points vs. Cash Tool", layout="wide")
-st.title("✈️ Award Redemption Value Tool")
-
-st.markdown("""
-Use this tool to compare whether a flight is a better deal when booked with **cash** or **points**.
-Simply enter your flight details and get a quick analysis.
-""")
-
-num_flights = st.number_input("How many flights would you like to compare?", min_value=1, max_value=5, step=1, value=1)
-
-flights = []
-
-for i in range(num_flights):
-    st.subheader(f"Flight {i + 1} Details")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        name = st.text_input("Flight Name or Route", placeholder="Example: JFK-LHR", key=f"name_{i}")
-        base_cash_price = st.text_input("Cash Price (excluding bag fees)", placeholder="e.g. 750.00", key=f"cash_price_{i}")
-        taxes_fees = st.text_input("Taxes and Fees on Award Ticket", placeholder="e.g. 80.00", key=f"taxes_fees_{i}")
-        bag_fees = st.text_input("Bag Fees", placeholder="e.g. 60.00", key=f"bag_fees_{i}")
-
-    with col2:
-        points_used = st.text_input("Points Required", placeholder="e.g. 20000", key=f"points_used_{i}")
-        program = st.selectbox("Loyalty Program", AIRLINE_CHOICES, key=f"program_{i}")
-
+def safe_float(val):
     try:
-        flight = {
-            "name": name,
-            "cash_price": float(base_cash_price),
-            "taxes_fees": float(taxes_fees),
-            "bag_fees": float(bag_fees),
-            "points_used": int(points_used),
-            "program": program
-        }
-        flights.append(flight)
-    except ValueError:
-        st.warning(f"Please complete all fields with valid numbers for Flight {i + 1}.")
+        return float(val)
+    except:
+        return 0.0
+
+def safe_int(val):
+    try:
+        return int(val)
+    except:
+        return 0
 
 def evaluate_redemption(cash_price, points_used, taxes_fees, bag_fees, program):
     cash_required_with_bags = taxes_fees + bag_fees
-    val_with_bag = round((cash_price - cash_required_with_bags) / points_used * 100, 2)
-    val_wo_bag = round((cash_price - taxes_fees) / points_used * 100, 2)
+    val_with_bag = round((cash_price - cash_required_with_bags) / points_used * 100, 2) if points_used else 0
+    val_wo_bag = round((cash_price - taxes_fees) / points_used * 100, 2) if points_used else 0
     benchmark = POINT_VALUATIONS.get(program, 1.0)
     total_effective_cost = cash_required_with_bags + (points_used * (benchmark / 100))
     savings = cash_price - total_effective_cost
@@ -86,6 +59,7 @@ def evaluate_redemption(cash_price, points_used, taxes_fees, bag_fees, program):
         assessment = "Good redemption"
     else:
         assessment = "Great redemption!"
+
     return val_with_bag, val_wo_bag, assessment
 
 def compare_flights(flights):
@@ -103,7 +77,7 @@ def compare_flights(flights):
         point_value = POINT_VALUATIONS.get(program, 1.0)
         point_dollar_value = points_used * (point_value / 100)
         total_effective_cost = round(cash_required + point_dollar_value, 2)
-        redemption_efficiency = round(base_cash_price - total_effective_cost, 2)
+        savings = round(base_cash_price - total_effective_cost, 2)
         pt_cash_value = round(points_used * (point_value / 100), 2)
 
         val_with_bag, val_wo_bag, assessment = evaluate_redemption(
@@ -118,7 +92,7 @@ def compare_flights(flights):
             "pt_cash_value": pt_cash_value,
             "point_dollar_value": round(point_dollar_value, 2),
             "total_effective_cost": total_effective_cost,
-            "redemption_efficiency": redemption_efficiency,
+            "redemption_efficiency": savings,
             "val_with_bag": val_with_bag,
             "val_wo_bag": val_wo_bag,
             "assessment": assessment,
@@ -128,11 +102,133 @@ def compare_flights(flights):
     results.sort(key=lambda x: x["val_with_bag"], reverse=True)
     return results
 
-if st.button("Compare Flights"):
-    if len(flights) == num_flights:
-        results = compare_flights(flights)
-        st.subheader("Comparison Results")
-        st.write("Higher redemption value (¢/point) is better.")
-        st.dataframe(results)
-    else:
-        st.error("Please fill in all required fields for all flights.")
+def main():
+    st.set_page_config(page_title="Points vs Cash Flight Tool", page_icon="✈️")
+    st.markdown("# ✈️ Points vs Cash Flight Tool")
+    st.write("Determine if using points or cash for flights is a better deal.")
+
+    mode = st.radio(
+        "Choose mode:",
+        ("Single Flight", "Compare Multiple Flights"),
+        index=0,
+        horizontal=True
+    )
+    num_flights = 1 if mode == "Single Flight" else st.number_input("Number of flights to compare", min_value=2, max_value=10, value=2, step=1)
+
+    flights = []
+
+    for i in range(num_flights):
+        st.markdown(f"### Flight {i + 1}")
+        name = st.text_input(f"Flight Name or Route (e.g., NYC to LAX)", key=f"name_{i}")
+
+        base_cash_price = safe_float(
+            st.text_input(
+                f"Cash Price (excl. bag fees) [$] (e.g., 299.99)",
+                key=f"cash_price_{i}",
+                on_change=None
+            )
+        )
+
+        taxes_fees = safe_float(
+            st.text_input(
+                f"Taxes and Fees on Reward Ticket [$] (e.g., 25.00)",
+                key=f"taxes_fees_{i}",
+                on_change=None
+            )
+        )
+
+        bag_fees = safe_float(
+            st.text_input(
+                f"Bag Fees (if applicable) [$] (e.g., 35.00)",
+                key=f"bag_fees_{i}",
+                on_change=None
+            )
+        )
+
+        points_used = safe_int(
+            st.text_input(
+                f"Points Required (e.g., 15000)",
+                key=f"points_used_{i}",
+                on_change=None
+            )
+        )
+
+        program = st.selectbox(f"Loyalty Program", AIRLINE_CHOICES, key=f"program_{i}")
+
+        flights.append({
+            "name": name,
+            "cash_price": base_cash_price,
+            "taxes_fees": taxes_fees,
+            "bag_fees": bag_fees,
+            "points_used": points_used,
+            "program": program
+        })
+
+    if st.button("Calculate" if mode == "Single Flight" else "Compare Flights"):
+        if mode == "Single Flight":
+            flight = flights[0]
+            val_with_bag, val_wo_bag, assessment = evaluate_redemption(
+                flight["cash_price"], flight["points_used"],
+                flight["taxes_fees"], flight["bag_fees"], flight["program"]
+            )
+            
+            # Calculate additional metrics similar to compare_flights function
+            base_cash_price = flight["cash_price"]
+            bag_fees = flight["bag_fees"]
+            taxes_fees = flight["taxes_fees"]
+            points_used = flight["points_used"]
+            program = flight["program"]
+
+            cash_price_with_bags = base_cash_price + bag_fees
+            cash_required = taxes_fees + bag_fees
+            point_value = POINT_VALUATIONS.get(program, 1.0)
+            point_dollar_value = round(points_used * (point_value / 100), 2)
+            total_effective_cost = round(cash_required + point_dollar_value, 2)
+            savings = round(base_cash_price - total_effective_cost, 2)
+            pt_cash_value = round(points_used * (point_value / 100), 2)
+
+            # Display comprehensive results
+            st.write(f"### Detailed Results for {flight['name']}")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.write("### Pricing Breakdown")
+                st.write(f"**Base Cash Price:** ${base_cash_price:.2f}")
+                st.write(f"**Bag Fees:** ${bag_fees:.2f}")
+                st.write(f"**Taxes & Fees:** ${taxes_fees:.2f}")
+                st.write(f"**Cash Price with Bags:** ${cash_price_with_bags:.2f}")
+            
+            with col2:
+                st.write("### Points Analysis")
+                st.write(f"**Points Used:** {points_used}")
+                st.write(f"**Loyalty Program:** {program}")
+                st.write(f"**Point Value:** {point_value}¢")
+                st.write(f"**Points Cash Value:** ${pt_cash_value:.2f}")
+            
+            st.write("### Redemption Efficiency")
+            st.write(f"**Redemption Value with Bags:** {val_with_bag:.2f}¢ per point")
+            st.write(f"**Redemption Value without Bags:** {val_wo_bag:.2f}¢ per point")
+            st.write(f"**Total Effective Cost:** ${total_effective_cost:.2f}")
+            st.write(f"**Estimated Savings:** ${savings:.2f}")
+            st.write(f"**Assessment:** **{assessment}**")
+        else:
+            results = compare_flights(flights)
+            st.write("### Flight Comparison Results")
+            st.table([
+                {
+                    "Flight": r["name"],
+                    "Req Award Cash": f"${r['cash_required']:.2f}",
+                    "Pt Cash Value": f"${r['pt_cash_value']:.2f}",
+                    "Total Cost": f"${r['total_effective_cost']:.2f}",
+                    "Savings": f"${r['redemption_efficiency']:.2f}",
+                    "Redemption Value w/ Bags (¢)": f"{r['val_with_bag']:.2f}",
+                    "Redemption Value w/o Bags (¢)": f"{r['val_wo_bag']:.2f}",
+                    "Benchmark (¢)": f"{r['benchmark']:.2f}",
+                    "Assessment": r["assessment"]
+                }
+                for r in results
+            ])
+
+if __name__ == "__main__":
+    main()
