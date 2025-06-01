@@ -59,25 +59,34 @@ st.write(
 
 with st.form("flight_form"):
     flight_name = st.text_input("Flight Name or Route", placeholder="Example: JFK to LHR")
-    cash_price = st.number_input("Cash Price (USD, excluding bag fees)", min_value=0.0, placeholder="e.g. 425.00")
-    taxes_fees = st.number_input("Taxes & Fees on Award Ticket (USD)", min_value=0.0, placeholder="e.g. 57.60")
-    bag_fees = st.number_input("Bag Fees (USD, if applicable)", min_value=0.0, placeholder="e.g. 70.00")
-    points_used = st.number_input("Points or Miles Required", min_value=0, placeholder="e.g. 32000")
+
+    cash_price_str = st.text_input("Cash Price (USD, excluding bag fees)", placeholder="e.g. 425.00")
+    taxes_fees_str = st.text_input("Taxes & Fees on Award Ticket (USD)", placeholder="e.g. 57.60")
+    bag_fees_str = st.text_input("Bag Fees (USD, if applicable)", placeholder="e.g. 70.00")
+    points_used_str = st.text_input("Points or Miles Required", placeholder="e.g. 32000")
 
     program = st.selectbox("Select Airline Loyalty Program", list(POINT_VALUATIONS.keys()))
-
     submitted = st.form_submit_button("Compare")
 
 if submitted:
-    val_with_bag, val_wo_bag, assessment, benchmark, savings = evaluate_redemption(
-        cash_price, points_used, taxes_fees, bag_fees, program
-    )
+    try:
+        cash_price = float(cash_price_str)
+        taxes_fees = float(taxes_fees_str)
+        bag_fees = float(bag_fees_str)
+        points_used = int(points_used_str)
 
-    st.markdown("### 🧾 Results")
-    st.write(f"**Flight:** {flight_name}")
-    st.write(f"**Program:** {program}")
-    st.write(f"**Benchmark Redemption Value:** {benchmark:.2f}¢/point")
-    st.write(f"**Redemption Value w/o Bag Fees:** {val_wo_bag:.2f}¢/point")
-    st.write(f"**Redemption Value w/ Bag Fees:** {val_with_bag:.2f}¢/point")
-    st.write(f"**Estimated Savings vs. Paying Cash:** ${savings:.2f}")
-    st.write(f"**Assessment:** {assessment}")
+        val_with_bag, val_wo_bag, assessment, benchmark, savings = evaluate_redemption(
+            cash_price, points_used, taxes_fees, bag_fees, program
+        )
+
+        st.markdown("### 🧾 Results")
+        st.write(f"**Flight:** {flight_name}")
+        st.write(f"**Program:** {program}")
+        st.write(f"**Benchmark Redemption Value:** {benchmark:.2f}¢/point")
+        st.write(f"**Redemption Value w/o Bag Fees:** {val_wo_bag:.2f}¢/point")
+        st.write(f"**Redemption Value w/ Bag Fees:** {val_with_bag:.2f}¢/point")
+        st.write(f"**Estimated Savings vs. Paying Cash:** ${savings:.2f}")
+        st.write(f"**Assessment:** {assessment}")
+
+    except ValueError:
+        st.error("Please enter valid numbers in all fields.")
