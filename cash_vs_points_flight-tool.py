@@ -122,6 +122,14 @@ def main():
     div[role="tooltip"] {
         display: none !important;
     }
+    .stDataFrame {
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+    }
+    .stDataFrame > div {
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+    }
     .dataframe {
         width: 100%;
         table-layout: fixed;
@@ -137,18 +145,6 @@ def main():
         white-space: normal !important;
         text-align: left;
         word-wrap: break-word;
-    }
-    .dataframe {
-        width: 100%;
-        table-layout: fixed;
-        word-wrap: break-word;
-        white-space: normal !important;
-        overflow-x: scroll;
-        overflow-y: scroll;
-    }
-    .stDataFrame {
-        overflow-x: auto !important;
-        overflow-y: auto !important;
     }
     </style>
     """, unsafe_allow_html=True)
