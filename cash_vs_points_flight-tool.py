@@ -122,14 +122,6 @@ def main():
     div[role="tooltip"] {
         display: none !important;
     }
-    .stDataFrame {
-        overflow-x: auto !important;
-        overflow-y: auto !important;
-    }
-    .stDataFrame > div {
-        overflow-x: auto !important;
-        overflow-y: auto !important;
-    }
     .dataframe {
         width: 100%;
         table-layout: fixed;
