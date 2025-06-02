@@ -104,6 +104,29 @@ def compare_flights(flights):
 
 def main():
     st.set_page_config(page_title="Points vs Cash Flight Tool", page_icon="✈️")
+
+    st.markdown("""
+    <style>
+    .table-container {
+        overflow-x: auto;
+        width: 100%;
+    }
+    .table-container table {
+        width: 100%;
+        white-space: nowrap;
+    }
+    div[class*="stNumberInput"] > div[class*="stVerticalBlock"] > div[class*="stHorizontalBlock"] {
+        display: none;
+    }
+    </style>
+    <style>
+    /* Hide any tooltip that might contain 'Press Enter to apply' */
+    div[role="tooltip"] {
+        display: none !important;
+    }
+    </style>
+        """, unsafe_allow_html=True)
+
     st.markdown("# ✈️ Points vs Cash Flight Tool")
     st.write("Use this tool to compare whether a flight is a better deal when booked with cash or points. Simply enter your flight details and get a quick analysis.")
 
@@ -215,6 +238,9 @@ def main():
         else:
             results = compare_flights(flights)
             st.write("### Flight Comparison Results")
+            
+            # Wrap the table in a div with custom class
+            st.markdown('<div class="table-container">', unsafe_allow_html=True)
             st.table([
                 {
                     "Flight": r["name"],
@@ -229,6 +255,7 @@ def main():
                 }
                 for r in results
             ])
+            st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
